@@ -191,6 +191,9 @@ h1, h2, h3 { margin: 0; line-height: 1.25; }
 .table tr:last-child td { border-bottom: 0; }
 .table tbody tr:hover { background: var(--surface-muted); }
 .table .empty { text-align: center; color: var(--text-muted); padding: 28px; }
+/* Seluruh baris bisa diklik: area link .stretched ditarik menutupi <tr>. */
+.table tr.row-link { position: relative; cursor: pointer; }
+.row-link a.stretched::after { content: ""; position: absolute; inset: 0; }
 
 /* ---------- Forms ---------- */
 .form { display: grid; gap: 16px; }

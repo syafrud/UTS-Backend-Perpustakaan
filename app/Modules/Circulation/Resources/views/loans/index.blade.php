@@ -19,8 +19,8 @@
         <tbody>
         @forelse ($loans as $loan)
             @php($status = $loan->status())
-            <tr>
-                <td><a href="{{ route('circulation.loans.show', $loan) }}"><strong>#{{ $loan->id }}</strong></a></td>
+            <tr class="row-link">
+                <td><a href="{{ route('circulation.loans.show', $loan) }}" class="stretched"><strong>#{{ $loan->id }}</strong></a></td>
                 <td>{{ $memberLabels[$loan->member_id] ?? '(terhapus)' }}</td>
                 <td class="muted">{{ $loan->items->map(fn ($i) => $bookTitles[$i->book_id] ?? '(terhapus)')->join(', ') }}</td>
                 <td>{{ $loan->loaned_at->format('d/m/Y') }}</td>
