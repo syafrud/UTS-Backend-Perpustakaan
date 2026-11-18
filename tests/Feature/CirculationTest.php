@@ -4,11 +4,13 @@ namespace Tests\Feature;
 
 use App\Models\User;
 use App\Modules\Catalog\Models\Book;
+use App\Modules\Circulation\Events\LoanReturned;
 use App\Modules\Circulation\Models\Loan;
 use App\Modules\Circulation\Services\LoanService;
 use App\Modules\Membership\Models\Member;
 use App\Modules\Membership\Models\MembershipType;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Event;
 use Tests\TestCase;
 
 class CirculationTest extends TestCase
@@ -97,6 +99,22 @@ class CirculationTest extends TestCase
 
         $this->assertSame(1, $book->fresh()->stock);
         $this->assertDatabaseHas('fines', ['loan_id' => $loan->id, 'days_late' => 3, 'amount' => 3000]);
+    }
+
+    public function test_return_publishes_loan_returned_domain_event(): void
+    {
+        Event::fake([LoanReturned::class]);
+        $books = Book::factory(2)->create(['stock' => 1]);
+        $loan = app(LoanService::class)->borrow($this->member->id, $books->pluck('id')->all());
+        $loan->update(['loaned_at' => today()->subDays(9), 'due_at' => today()->subDays(2)]);
+
+        app(LoanService::class)->return($loan);
+
+        Event::assertDispatched(LoanReturned::class, fn (LoanReturned $e) => $e->loanId === $loan->id
+            && $e->bookIds === $books->pluck('id')->all()
+            && $e->daysLate === 2);
+        // Listener dipalsukan -> stok tidak kembali; membuktikan stok dikelola Catalog, bukan Circulation.
+        $this->assertSame(0, $books->first()->fresh()->stock);
     }
 
     public function test_on_time_return_has_no_fine_and_cannot_return_twice(): void

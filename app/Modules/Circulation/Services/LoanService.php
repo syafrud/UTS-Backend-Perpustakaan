@@ -3,6 +3,7 @@
 namespace App\Modules\Circulation\Services;
 
 use App\Modules\Catalog\Contracts\BookCatalog;
+use App\Modules\Circulation\Events\LoanReturned;
 use App\Modules\Circulation\Exceptions\FineAlreadyPaidException;
 use App\Modules\Circulation\Exceptions\LoanAlreadyReturnedException;
 use App\Modules\Circulation\Exceptions\LoanLimitExceededException;
@@ -14,7 +15,8 @@ use Carbon\CarbonInterface;
 use Illuminate\Support\Facades\DB;
 
 /**
- * Logika peminjaman. Data buku & anggota HANYA diakses lewat Contract modul lain.
+ * Logika peminjaman. Data buku & anggota HANYA diakses lewat Contract modul lain;
+ * pengembalian diumumkan lewat Domain Event LoanReturned.
  */
 class LoanService
 {
@@ -56,7 +58,7 @@ class LoanService
         });
     }
 
-    /** Kembalikan buku, tambah stok, dan buat denda bila terlambat. */
+    /** Kembalikan buku, buat denda bila terlambat, lalu publish LoanReturned (stok dikembalikan Catalog). */
     public function return(Loan $loan, ?CarbonInterface $returnedAt = null): Loan
     {
         $returnedAt = ($returnedAt ?? today())->copy()->startOfDay();
@@ -69,7 +71,6 @@ class LoanService
             }
 
             $loan->update(['returned_at' => $returnedAt]);
-            $loan->items->each(fn (LoanItem $item) => $this->catalog->incrementStock($item->book_id));
 
             $daysLate = $this->daysLate($loan->due_at, $returnedAt);
             if ($daysLate > 0) {
@@ -78,6 +79,15 @@ class LoanService
                     'amount' => $daysLate * $loan->fine_per_day * $loan->items->count(),
                 ]);
             }
+
+            // Domain Event: Catalog mengembalikan stok lewat listener-nya sendiri.
+            LoanReturned::dispatch(
+                $loan->id,
+                $loan->member_id,
+                $loan->items->pluck('book_id')->all(),
+                $returnedAt->toDateString(),
+                $daysLate,
+            );
 
             return $loan->load('fine');
         });
