@@ -3,7 +3,10 @@
 namespace App\Modules\Catalog\Providers;
 
 use App\Modules\Catalog\Contracts\BookCatalog;
+use App\Modules\Catalog\Listeners\RestockReturnedBooks;
 use App\Modules\Catalog\Services\EloquentBookCatalog;
+use App\Modules\Circulation\Events\LoanReturned;
+use Illuminate\Support\Facades\Event;
 use Illuminate\Support\ServiceProvider;
 
 class CatalogServiceProvider extends ServiceProvider
@@ -20,5 +23,8 @@ class CatalogServiceProvider extends ServiceProvider
         $this->loadRoutesFrom(__DIR__.'/../Routes/web.php');
         $this->loadRoutesFrom(__DIR__.'/../Routes/api.php');
         $this->loadViewsFrom(__DIR__.'/../Resources/views', 'catalog');
+
+        // Domain Event dari CirculationModule.
+        Event::listen(LoanReturned::class, RestockReturnedBooks::class);
     }
 }
