@@ -1,16 +1,28 @@
-@extends('layouts.app')
+@extends('layouts.guest')
 @section('title', 'Register')
+@section('subtitle', 'Daftar sebagai pustakawan')
 @section('content')
-<div class="max-w-sm mx-auto bg-white rounded shadow p-6 mt-10">
-    <h1 class="text-xl font-bold mb-4">Register Pustakawan</h1>
-    <form method="POST" action="{{ route('register') }}" class="space-y-3">
-        @csrf
-        <input name="name" value="{{ old('name') }}" placeholder="Nama" class="w-full border rounded px-3 py-2">
-        <input name="email" type="email" value="{{ old('email') }}" placeholder="Email" class="w-full border rounded px-3 py-2">
-        <input name="password" type="password" placeholder="Password (min. 8)" class="w-full border rounded px-3 py-2">
-        <input name="password_confirmation" type="password" placeholder="Ulangi password" class="w-full border rounded px-3 py-2">
-        <button class="w-full bg-indigo-600 text-white rounded py-2">Daftar</button>
-    </form>
-    <p class="text-sm mt-4">Sudah punya akun? <a href="{{ route('login') }}" class="text-indigo-600 underline">Login</a></p>
-</div>
+<form method="POST" action="{{ route('register') }}" class="form">
+    @csrf
+    <div class="field">
+        <label for="name">Nama</label>
+        <input id="name" name="name" value="{{ old('name') }}" @class(['input', 'is-invalid' => $errors->has('name')]) autofocus>
+    </div>
+    <div class="field">
+        <label for="email">Email</label>
+        <input id="email" name="email" type="email" value="{{ old('email') }}" @class(['input', 'is-invalid' => $errors->has('email')])>
+    </div>
+    <div class="field">
+        <label for="password">Password <span class="hint">(min. 8 karakter)</span></label>
+        <input id="password" name="password" type="password" @class(['input', 'is-invalid' => $errors->has('password')])>
+    </div>
+    <div class="field">
+        <label for="password_confirmation">Ulangi password</label>
+        <input id="password_confirmation" name="password_confirmation" type="password" class="input">
+    </div>
+    <button type="submit" class="btn btn-primary btn-block">Daftar</button>
+</form>
+@endsection
+@section('footer')
+Sudah punya akun? <a href="{{ route('login') }}">Login</a>
 @endsection

@@ -1,43 +1,52 @@
 @extends('layouts.app')
 @section('title', 'Peminjaman #'.$loan->id)
 @section('content')
-<div class="bg-white rounded shadow p-6 max-w-2xl">
-    <h1 class="text-2xl font-bold">Peminjaman #{{ $loan->id }} <span class="text-base font-normal text-slate-500">({{ $loan->status() }})</span></h1>
-    <dl class="grid grid-cols-3 gap-2 mt-4 text-sm">
-        <dt class="text-slate-500">Anggota</dt><dd class="col-span-2">{{ $memberLabel }}</dd>
-        <dt class="text-slate-500">Tanggal pinjam</dt><dd class="col-span-2">{{ $loan->loaned_at->format('d/m/Y') }}</dd>
-        <dt class="text-slate-500">Jatuh tempo</dt><dd class="col-span-2">{{ $loan->due_at->format('d/m/Y') }}</dd>
-        <dt class="text-slate-500">Dikembalikan</dt><dd class="col-span-2">{{ $loan->returned_at?->format('d/m/Y') ?? '-' }}</dd>
-        <dt class="text-slate-500">Denda/hari/buku</dt><dd class="col-span-2">Rp {{ number_format($loan->fine_per_day, 0, ',', '.') }}</dd>
-        <dt class="text-slate-500">Buku</dt>
-        <dd class="col-span-2">
-            <ul class="list-disc ml-5">
-                @foreach ($loan->items as $item)
-                    <li>{{ $bookTitles[$item->book_id] ?? 'Buku #'.$item->book_id.' (terhapus)' }}</li>
-                @endforeach
-            </ul>
-        </dd>
-        @if ($loan->fine)
-            <dt class="text-slate-500">Denda</dt>
-            <dd class="col-span-2 text-red-700">
-                {{ $loan->fine->days_late }} hari telat &times; Rp {{ number_format($loan->fine_per_day, 0, ',', '.') }} &times; {{ $loan->items->count() }} buku
-                = <b>Rp {{ number_format($loan->fine->amount, 0, ',', '.') }}</b>
-                ({{ $loan->fine->paid_at ? 'lunas' : 'belum dibayar' }})
+@php($status = $loan->status())
+@php($statusBadge = ['Dikembalikan' => 'badge-success', 'Terlambat' => 'badge-danger', 'Dipinjam' => 'badge-warning'])
+<div class="page-header">
+    <h1>Peminjaman #{{ $loan->id }} <span class="badge {{ $statusBadge[$status] }}">{{ $status }}</span></h1>
+    <div class="actions">
+        <a href="{{ route('circulation.loans.index') }}" class="btn btn-secondary">Kembali</a>
+    </div>
+</div>
+<div class="card card-narrow">
+    <div class="card-body">
+        <dl class="detail flush">
+            <dt>Anggota</dt><dd>{{ $memberLabel }}</dd>
+            <dt>Tanggal pinjam</dt><dd>{{ $loan->loaned_at->format('d/m/Y') }}</dd>
+            <dt>Jatuh tempo</dt><dd>{{ $loan->due_at->format('d/m/Y') }}</dd>
+            <dt>Dikembalikan</dt><dd>{{ $loan->returned_at?->format('d/m/Y') ?? '-' }}</dd>
+            <dt>Denda / hari / buku</dt><dd>Rp {{ number_format($loan->fine_per_day, 0, ',', '.') }}</dd>
+            <dt>Buku</dt>
+            <dd>
+                <ul>
+                    @foreach ($loan->items as $item)
+                        <li>{{ $bookTitles[$item->book_id] ?? 'Buku #'.$item->book_id.' (terhapus)' }}</li>
+                    @endforeach
+                </ul>
             </dd>
-        @endif
-    </dl>
+            @if ($loan->fine)
+                <dt>Denda</dt>
+                <dd>
+                    {{ $loan->fine->days_late }} hari &times; Rp {{ number_format($loan->fine_per_day, 0, ',', '.') }} &times; {{ $loan->items->count() }} buku
+                    = <strong class="text-danger">Rp {{ number_format($loan->fine->amount, 0, ',', '.') }}</strong>
+                    <span @class(['badge', 'badge-success' => $loan->fine->paid_at, 'badge-danger' => ! $loan->fine->paid_at])>{{ $loan->fine->paid_at ? 'Lunas' : 'Belum dibayar' }}</span>
+                </dd>
+            @endif
+        </dl>
 
-    @unless ($loan->isReturned())
-        <form method="POST" action="{{ route('circulation.loans.return', $loan) }}" class="mt-6 flex flex-wrap items-end gap-3 border-t pt-4">
-            @csrf
-            <label class="block text-sm">Tanggal kembali
-                <input type="date" name="returned_at" value="{{ old('returned_at', today()->toDateString()) }}" class="border rounded px-3 py-2 @error('returned_at') border-red-500 @enderror">
-            </label>
-            <button class="bg-green-600 text-white rounded px-4 py-2">Proses Pengembalian</button>
-            @error('returned_at') <span class="text-red-600 text-sm w-full">{{ $message }}</span> @enderror
-        </form>
-    @endunless
-
-    <a href="{{ route('circulation.loans.index') }}" class="inline-block mt-6 underline">Kembali</a>
+        @unless ($loan->isReturned())
+            <hr class="divider">
+            <form method="POST" action="{{ route('circulation.loans.return', $loan) }}" class="form-actions return-form">
+                @csrf
+                <div class="field">
+                    <label for="returned_at">Tanggal kembali</label>
+                    <input id="returned_at" type="date" name="returned_at" value="{{ old('returned_at', today()->toDateString()) }}" @class(['input', 'is-invalid' => $errors->has('returned_at')])>
+                </div>
+                <button type="submit" class="btn btn-success">Proses Pengembalian</button>
+            </form>
+            @error('returned_at') <span class="field-error">{{ $message }}</span> @enderror
+        @endunless
+    </div>
 </div>
 @endsection

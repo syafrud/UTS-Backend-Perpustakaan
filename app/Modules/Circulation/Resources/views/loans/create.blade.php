@@ -2,27 +2,37 @@
 @section('title', 'Peminjaman Baru')
 @section('content')
 @php($selectedBooks = collect(old('book_ids', []))->map(fn ($id) => (int) $id))
-<h1 class="text-2xl font-bold mb-4">Peminjaman Baru</h1>
-<form method="POST" action="{{ route('circulation.loans.store') }}" class="bg-white rounded shadow p-6 space-y-4 max-w-xl">
-    @csrf
-    <label class="block">Anggota (aktif)
-        <select name="member_id" class="w-full border rounded px-3 py-2 @error('member_id') border-red-500 @enderror">
-            <option value="">-- pilih anggota --</option>
-            @foreach ($members as $id => $label)
-                <option value="{{ $id }}" @selected(old('member_id') == $id)>{{ $label }}</option>
-            @endforeach
-        </select>
-        @error('member_id') <span class="text-red-600 text-sm">{{ $message }}</span> @enderror
-    </label>
-    <label class="block">Buku <span class="text-xs text-slate-500">(Ctrl+klik untuk pilih banyak, maks. 5; hanya buku dengan stok tersedia)</span>
-        <select name="book_ids[]" multiple size="8" class="w-full border rounded px-3 py-2 @error('book_ids') border-red-500 @enderror">
-            @foreach ($books as $id => $title)
-                <option value="{{ $id }}" @selected($selectedBooks->contains($id))>{{ $title }}</option>
-            @endforeach
-        </select>
-        @error('book_ids') <span class="text-red-600 text-sm">{{ $message }}</span> @enderror
-    </label>
-    <button class="bg-indigo-600 text-white rounded px-4 py-2">Simpan Peminjaman</button>
-    <a href="{{ route('circulation.loans.index') }}" class="ml-2">Batal</a>
-</form>
+<div class="page-header">
+    <h1>Peminjaman Baru</h1>
+</div>
+<div class="card card-narrow">
+    <div class="card-body">
+        <form method="POST" action="{{ route('circulation.loans.store') }}" class="form">
+            @csrf
+            <div class="field">
+                <label for="member_id">Anggota <span class="hint">(hanya anggota aktif)</span></label>
+                <select id="member_id" name="member_id" @class(['select', 'is-invalid' => $errors->has('member_id')])>
+                    <option value="">-- pilih anggota --</option>
+                    @foreach ($members as $id => $label)
+                        <option value="{{ $id }}" @selected(old('member_id') == $id)>{{ $label }}</option>
+                    @endforeach
+                </select>
+                @error('member_id') <span class="field-error">{{ $message }}</span> @enderror
+            </div>
+            <div class="field">
+                <label for="book_ids">Buku <span class="hint">(Ctrl+klik untuk memilih banyak, maks. 5; hanya buku yang stoknya tersedia)</span></label>
+                <select id="book_ids" name="book_ids[]" multiple size="8" @class(['select', 'is-invalid' => $errors->has('book_ids')])>
+                    @foreach ($books as $id => $title)
+                        <option value="{{ $id }}" @selected($selectedBooks->contains($id))>{{ $title }}</option>
+                    @endforeach
+                </select>
+                @error('book_ids') <span class="field-error">{{ $message }}</span> @enderror
+            </div>
+            <div class="form-actions">
+                <button type="submit" class="btn btn-primary">Simpan Peminjaman</button>
+                <a href="{{ route('circulation.loans.index') }}" class="btn btn-secondary">Batal</a>
+            </div>
+        </form>
+    </div>
+</div>
 @endsection
